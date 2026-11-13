@@ -1,0 +1,91 @@
+# The Homebrew formula of Massimo for the update channel nightly, rendered
+# from packaging/homebrew/massimo.rb.in by packaging/homebrew/render.sh at
+# each release and pushed to the tap metaworx/homebrew-massimo, or for the
+# rolling channels devel and nightly at each of their builds to
+# metaworx/homebrew-massimo-rolling (packaging/README.md, "Homebrew"). Built from source on the Mac, so
+# nothing needs notarization and nothing is quarantined; brew then owns
+# the binary, which the marker under share/massimo tells massimo.
+class MassimoNightly < Formula
+  desc "Server for eQ-3 MAX! Cube heating systems: API, web UI, the Cube proxy"
+  homepage "https://github.com/metaworx/massimo"
+  url "https://github.com/metaworx/massimo/archive/a173eb5eb45457ff926237805da8f70434d02e25.tar.gz"
+  sha256 "4fe81efd527ae55c85ddb37ac20679ad6ef4f314758bdbd9d01537a0af2357f2"
+  version "0.15.0-alpha.1-21-ga173eb5"
+  license "AGPL-3.0-or-later"
+  head "https://github.com/metaworx/massimo.git", branch: "main"
+
+  conflicts_with "massimo-devel", because: "both install bin/massimo"
+
+  depends_on "go" => :build
+
+  def install
+    system "go", "build", *std_go_args(output: bin/"massimo", ldflags: "-s -w -X main.version=v#{version} -X main.flavour=nightly"), "./cmd/massimo"
+    # The marker internal/install.Packaged reads: brew owns this binary, so
+    # massimo update leaves the install to it, and the web UI's Update
+    # runs brew upgrade.
+    (share/"massimo").mkpath
+    (share/"massimo"/"packaged").write "brew\nbrew upgrade massimo-nightly\nbrew uninstall massimo-nightly\n"
+    template = (buildpath/"packaging/env.template").read
+    template = template.sub("MASSIMO_LOG=/var/log/massimo/serve.log",
+                            "# The log is #{var}/log/massimo/serve.log: the service passes -log; no MASSIMO_LOG here.")
+    (share/"massimo"/"env.template").write template
+  end
+
+  # Declarative, as brew asks of every tap (post_install is deprecated):
+  # the directories, and the settings file once from the template, which
+  # brew keeps from then on.
+  post_install_steps do
+    mkdir_p "massimo", base: :etc
+    mkdir_p "massimo", base: :var
+    mkdir_p "log/massimo", base: :var
+    unless_path_exists "massimo/env", base: :etc do
+      copy "share/massimo/env.template", "massimo/env", source_base: :prefix, target_base: :etc
+      set_permissions "massimo/env", "0600", base: :etc
+    end
+  end
+
+  service do
+    # serve writes and rotates its log itself, as on every platform;
+    # brew's file takes what it prints before the log, and a panic.
+    run [opt_bin/"massimo", "-env", etc/"massimo/env", "-data", var/"massimo", "serve", "-listen", ":8099",
+         "-log", var/"log/massimo/serve.log", "-log-process-format", "none"]
+    keep_alive true
+    working_dir var/"massimo"
+    log_path var/"log/massimo.log"
+    error_log_path var/"log/massimo.log"
+  end
+
+  def caveats
+    <<~EOS
+      Nothing needs to go into #{etc}/massimo/env for a start. Run
+      massimo serve as yourself while you are logged in with
+        brew services start massimo-nightly
+      or as a daemon at boot with
+        sudo brew services start massimo-nightly
+      The web UI is then at http://localhost:8099/. Until it has an owner,
+      every device on the local network may use it: create the owner there
+      at once, or before the start with
+        massimo -data #{var}/massimo user add <name> -role owner
+      The Cubes are added in the web UI too, under System settings, Cubes;
+      the settings file takes the rest (README.md, "Cube variables").
+      Updates come through the web UI's Update, which runs brew upgrade and
+      brew services restart for you under brew services as yourself, or by
+      hand: brew upgrade massimo-nightly does not restart a running service, brew
+      services restart massimo-nightly does. massimo update leaves them to brew. Do
+      not mix this with massimo install, which sets up a Mac without
+      Homebrew.
+    EOS
+  end
+
+  test do
+    port = free_port
+    pid = spawn bin/"massimo", "serve", "-listen", "127.0.0.1:#{port}", "-proxy", "off"
+    sleep 3
+    begin
+      assert_match "\"ok\": true", shell_output("curl -s http://127.0.0.1:#{port}/healthz")
+    ensure
+      Process.kill("TERM", pid)
+      Process.wait(pid)
+    end
+  end
+end
