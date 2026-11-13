@@ -8,11 +8,13 @@
 class MassimoDevel < Formula
   desc "Server for eQ-3 MAX! Cube heating systems: API, web UI, the Cube proxy"
   homepage "https://github.com/metaworx/massimo"
-  url "https://github.com/metaworx/massimo/archive/93e4c01be9d390d52ac45b58b2430c35a5a21eb8.tar.gz"
-  sha256 "240450fc51ab8bf4ce2846063a79f749b81ab0f1864ef02e1baa11577f176f73"
-  version "0.15.0-alpha.1-20-g93e4c01"
+  url "https://github.com/metaworx/massimo/archive/fdeaf680e118eefab6614122890f552ae7ab5b03.tar.gz"
+  sha256 "4545179f840460d4a73224868df6d0ef26be7d5a916232879ee2751f3f47fb83"
+  version "0.15.0-alpha.1-28-gfdeaf68"
   license "AGPL-3.0-or-later"
   head "https://github.com/metaworx/massimo.git", branch: "main"
+
+  conflicts_with "massimo-nightly", because: "both install bin/massimo"
 
   depends_on "go" => :build
 
