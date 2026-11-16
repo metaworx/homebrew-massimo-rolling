@@ -8,9 +8,9 @@
 class MassimoNightly < Formula
   desc "Server for eQ-3 MAX! Cube heating systems: API, web UI, the Cube proxy"
   homepage "https://github.com/metaworx/massimo"
-  url "https://github.com/metaworx/massimo/archive/33a387cef8380650940c5151c39a0e76673878db.tar.gz"
-  sha256 "b6b80cc72c40844edb6825fd4c6de24b1f69931f24094a3e2486c1037ec059d3"
-  version "0.15.0-alpha.1-392-g33a387ce"
+  url "https://github.com/metaworx/massimo/archive/50d656f9ec59b3ef85e5d465adc2c37689dd2c73.tar.gz"
+  sha256 "c8a96d48e63cfbfd008c574612d1f856c04f7de066b29479c01f55735629fa9c"
+  version "0.16.0-alpha.1-152-g50d656f9"
   license "AGPL-3.0-or-later"
   head "https://github.com/metaworx/massimo.git", branch: "main"
 
@@ -19,6 +19,9 @@ class MassimoNightly < Formula
   depends_on "go" => :build
 
   def install
+    # The web UI's parts first (make ui), which the server embeds and git
+    # does not keep; a release from before them has no tools/uibundle.
+    system "go", "-C", "tools/uibundle", "run", "." if (buildpath/"tools/uibundle").exist?
     system "go", "build", *std_go_args(output: bin/"massimo", ldflags: "-s -w -X main.version=v#{version} -X main.flavour=nightly"), "./cmd/massimo"
     # The marker internal/install.Packaged reads: brew owns this binary, so
     # massimo update leaves the install to it, and the web UI's Update
