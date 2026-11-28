@@ -8,9 +8,9 @@
 class MassimoDevel < Formula
   desc "Server for eQ-3 MAX! Cube heating systems: API, web UI, the Cube proxy"
   homepage "https://github.com/metaworx/massimo"
-  url "https://github.com/metaworx/massimo/archive/b34764de11d872334af8baffa802a3330af84e93.tar.gz"
-  sha256 "f9b502b4ee906e50318e189024936680c357284bb1b115df08c68f52447cd0be"
-  version "0.16.0-alpha.1-1081-gb34764de"
+  url "https://github.com/metaworx/massimo/archive/b4faf53a855f47c2bef49256b9306f01589723d1.tar.gz"
+  sha256 "8c70af3cd486308afdc1b64a39461a035c12468863e46473715085393e0fe33a"
+  version "0.16.0-alpha.1-1088-gb4faf53a"
   license "AGPL-3.0-or-later"
   head "https://github.com/metaworx/massimo.git", branch: "main"
 
